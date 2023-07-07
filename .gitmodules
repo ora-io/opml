@@ -1,0 +1,6 @@
+[submodule "unicorn"]
+	path = unicorn
+	url = git@github.com:geohot/unicorn.git
+[submodule "mlgo"]
+	path = mlgo
+	url = git@github.com:OPML-Labs/mlgo.git
