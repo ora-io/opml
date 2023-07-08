@@ -63,7 +63,7 @@ trap "exit_trap" SIGINT SIGTERM EXIT
 # --- CHALLENGE SETUP ----------------------------------------------------------
 
 # AI model (mnist model)
-PROGRAM_PATH="./mlgo/mlgo.bin"
+PROGRAM_PATH="./mlgo/examples/mnist_mips/mlgo.bin"
 MODEL_PATH="./mlgo/examples/mnist/models/mnist/ggml-model-small-f32-big-endian.bin"
 DATA_PATH="./mlgo/examples/mnist/models/mnist/input_7"
 
@@ -76,6 +76,8 @@ export ID=0
 
 # clear data from previous runs
 rm -rf /tmp/cannon/* /tmp/cannon_fault/*
+mkdir -p /tmp/cannon 
+mkdir -p /tmp/cannon_fault
 
 # stored in /tmp/cannon/golden.json
 shout "GENERATING INITIAL MEMORY STATE CHECKPOINT"

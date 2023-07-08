@@ -46,7 +46,7 @@ mlvm:
 mlgo:
 	cd mlgo && pip install -r requirements.txt
 	cd examples/mnist_mips && ./build.sh
-.PHONY: mlvm
+.PHONY: mlgo
 
 contracts: nodejs
 	npx hardhat compile
