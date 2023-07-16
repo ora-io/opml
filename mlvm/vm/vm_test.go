@@ -51,3 +51,16 @@ func TestVM2(t *testing.T){
 	}
 	RunWithParams(params)
 }
+
+func TestVM3(t *testing.T){
+	initTest()
+	params := &Params{
+		Target: -1,
+		ProgramPath: "../../mlgo/examples/mnist_mips/mlgo.bin",
+		Basedir: "/tmp/cannon",
+		ModelPath: "../../mlgo/examples/mnist/models/mnist/ggml-model-small-f32-big-endian.bin",
+		InputPath: "../../mlgo/examples/mnist/models/mnist/input_7",
+		MIPSVMCompatible: true,
+	}
+	RunWithParams(params)
+}

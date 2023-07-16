@@ -142,7 +142,7 @@ func ParseParams() *Params {
 	params := &Params{
 		Target: target,
 		ProgramPath: programPath,
-		ModelPath: modelName,
+		ModelPath: modelPath,
 		InputPath: inputPath,
 		Basedir: basedir,
 		OutputGolden: outputGolden,
@@ -165,7 +165,7 @@ func RunWithParams(params *Params) {
 
 	target := params.Target
 	programPath := params.ProgramPath
-	// modelPath := params.ModelPath
+	modelPath := params.ModelPath
 	inputPath := params.InputPath
 	basedir := params.Basedir
 	outputGolden := params.OutputGolden
@@ -175,7 +175,7 @@ func RunWithParams(params *Params) {
 	nodeID := params.NodeID
 
 	if params.MIPSVMCompatible {
-		MIPSRunCompatible(basedir, target, programPath, inputPath, outputGolden)
+		MIPSRunCompatible(basedir, target, programPath, modelPath, inputPath, outputGolden)
 		return
 	}
 
@@ -307,7 +307,7 @@ func MIPSRun(basedir string, target int, nodeID int, programPath string, inputPa
 	}
 }
 
-func MIPSRunCompatible(basedir string, target int, programPath string, inputPath string, outputGolden bool) {
+func MIPSRunCompatible(basedir string, target int, programPath string, modelPath string, inputPath string, outputGolden bool) {
 	regfault := -1
 	regfault_str, regfault_valid := os.LookupEnv("REGFAULT")
 	if regfault_valid {
@@ -345,6 +345,8 @@ func MIPSRunCompatible(basedir string, target int, programPath string, inputPath
 	if inputPath != "" {
 		LoadInputData(mu, inputPath, ram)
 	}
+	LoadModel(mu, modelPath, ram)
+	
 	
 	if outputGolden {
 		WriteCheckpoint(ram, fmt.Sprintf("%s/golden.json", basedir), -1)
@@ -355,6 +357,7 @@ func MIPSRunCompatible(basedir string, target int, programPath string, inputPath
 	// do not need if we just run pure computation task
 	// LoadMappedFileUnicorn(mu, fmt.Sprintf("%s/input", basedir), ram, 0x30000000)
 
+	SyncRegs(mu, ram)
 	mu.Start(0, 0x5ead0004)
 	SyncRegs(mu, ram)
 
