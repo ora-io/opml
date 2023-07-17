@@ -11,8 +11,8 @@ import (
 
 
 func LLAMA(nodeID int) ([]byte, int, error){
-	modelFile := "/path/models/llama-7b-fp32.bin.2"
-	prompt := "Why Golang is so popular?"
+	modelFile := "./mlgo/examples/llama/models/llama-7b-fp32.bin"
+	prompt := "How to combine AI and blockchain?"
 	threadCount := 32
 	ctx, err := llama.LoadModel(modelFile, true)
 	fmt.Println("Load Model Finish")

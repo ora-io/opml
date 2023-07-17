@@ -23,6 +23,8 @@ make build
 
 ## Examples
 
+### MNIST
+
 The script files [`demo/challenge_simple.sh`](demo/challenge_simple.sh) presents an example scenario (a DNN model for MNIST) demonstrating the whole process of a fault proof, including the challenge game and single step verification.
 
 To test the example, we should first start a local node
@@ -33,6 +35,23 @@ Then we can run
 ```shell
 sh ./demo/challenge_simple.sh
 ```
+
+### 7B-LLaMA
+
+**Note**: This part is still under development!
+
+Before testing 7B-LLaMA, please refer to `mlgo/examples/llama/README.md` and download the model of 7B-LLaMA.
+
+After that, we can first start a local node
+```shell
+npx hardhat node
+```
+Then we can run 
+```shell
+sh ./demo/challenge_llama.sh
+```
+
+Note: when running `sh ./demo/challenge_llama.sh`, you may encounter such an error in console "SocketError: other side closed". Just ignore it. :) This is a special "feature" of hardhat when running the JS script that takes too long time. I have fixed it in the script. Although you can see an error in console, the script should run correctly.
 
 ## License
 

@@ -27,7 +27,7 @@ func TestMNIST(t *testing.T) {
 }
 
 func TestLLAMA(t *testing.T) {
-	modelFile := "/path/models/llama-7b-fp32.bin.2"
+	modelFile := "../../mlgo/examples/llama/models/llama-7b-fp32.bin"
 	prompt := "Why Golang is so popular?"
 	threadCount := 32
 	ctx, err := llama.LoadModel(modelFile, true)
