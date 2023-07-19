@@ -7,6 +7,7 @@ const programPath = process.env.PROGRAM_PATH
 const modelPath = process.env.MODEL_PATH
 const modelName = process.env.MODEL_NAME
 const dataPath = process.env.DATA_PATH
+const prompt = process.env.PROMPT
 
 async function deploy() {
   const MIPS = await ethers.getContractFactory("MIPS")
@@ -125,7 +126,7 @@ function getTrieAtStep(step, nodeID, isLastLayer) {
     console.log("running program: ", programPath)
     const inputPath = basedir+"/data/node_" + nodeID.toString()
     const lastLayer = isLastLayer ?  " --lastLayer" : " "
-    const command = "mlvm/mlvm" + lastLayer + " --target="+step.toString() + " --program="+programPath + " --modelName="+modelName + " --data="+inputPath + " --nodeID="+nodeID.toString()
+    const command = "mlvm/mlvm" + lastLayer + " --target="+step.toString() + " --program="+programPath + " --modelName="+modelName + " --data="+inputPath + " --nodeID="+nodeID.toString() + " --model="+modelPath + " --prompt="+prompt
     console.log(command)
     child_process.execSync(command, {stdio: 'inherit'})
   }

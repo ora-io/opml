@@ -103,6 +103,7 @@ type Params struct {
 	NodeID int
 
 	MIPSVMCompatible bool
+	Prompt string
 }
 
 func ParseParams() *Params {
@@ -119,6 +120,7 @@ func ParseParams() *Params {
 	var nodeID int
 
 	var mipsVMCompatible bool
+	var prompt string
 
 	defaultBasedir := os.Getenv("BASEDIR")
 	if len(defaultBasedir) == 0 {
@@ -137,6 +139,7 @@ func ParseParams() *Params {
 	flag.IntVar(&nodeID, "nodeID", 0, "The current nodeID")
 	
 	flag.BoolVar(&mipsVMCompatible, "mipsVMCompatible", false, "compatible for MIPS VM")
+	flag.StringVar(&prompt, "prompt", "How to combine AI and blockchain?", "prompt for LLaMA")
 	flag.Parse()
 
 	params := &Params{
@@ -151,6 +154,7 @@ func ParseParams() *Params {
 		ModelName: modelName,
 		NodeID: nodeID,
 		MIPSVMCompatible: mipsVMCompatible,
+		Prompt: prompt,
 	}
 
 	return params
@@ -181,7 +185,7 @@ func RunWithParams(params *Params) {
 
 	if !lastLayer {
 		id := target
-		nodeFile, nodeCount, err := LayerRun(basedir + "/data", id, modelName)
+		nodeFile, nodeCount, err := LayerRun(basedir + "/data", id, modelName, params)
 		if err != nil {
 			fmt.Println("layer run error: ", err)
 			return
@@ -201,15 +205,15 @@ func RunWithParams(params *Params) {
 
 }
 
-func LayerRun(basedir string, nodeID int, modelName string) (string, int, error) {
+func LayerRun(basedir string, nodeID int, modelName string, params *Params) (string, int, error) {
 	var envBytes []byte
 	var err error
 	var nodeCount int
 
 	if modelName == "MNIST" {
-		envBytes, nodeCount, err = MNIST(nodeID)
+		envBytes, nodeCount, err = MNIST(nodeID, params.ModelPath, params.InputPath)
 	} else { // if modelName == "LLAMA"
-		envBytes, nodeCount, err = LLAMA(nodeID)
+		envBytes, nodeCount, err = LLAMA(nodeID, params.ModelPath, params.Prompt)
 	}
 
 	if err != nil {

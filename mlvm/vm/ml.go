@@ -10,9 +10,14 @@ import (
 )
 
 
-func LLAMA(nodeID int) ([]byte, int, error){
-	modelFile := "./mlgo/examples/llama/models/llama-7b-fp32.bin"
-	prompt := "How to combine AI and blockchain?"
+func LLAMA(nodeID int, modelFile string, prompt string) ([]byte, int, error){
+	if modelFile == "" {
+		modelFile = "./mlgo/examples/llama/models/llama-7b-fp32.bin"
+	}
+	if prompt == "" {
+		prompt = "How to combine AI and blockchain?"
+	}
+	
 	threadCount := 32
 	ctx, err := llama.LoadModel(modelFile, true)
 	fmt.Println("Load Model Finish")
@@ -27,16 +32,21 @@ func LLAMA(nodeID int) ([]byte, int, error){
 	return envBytes, int(graph.NodesCount), nil
 }
 
-func MNIST(nodeID int) ([]byte, int, error) {
+func MNIST(nodeID int, modelFile string, dataFile string) ([]byte, int, error) {
 	threadCount := 1
-	modelFile := "../../mlgo/examples/mnist/models/mnist/ggml-model-small-f32.bin"
+	if modelFile == "" {
+		modelFile = "../../mlgo/examples/mnist/models/mnist/ggml-model-small-f32.bin"
+	}
+	if dataFile == "" {
+		dataFile = "../../mlgo/examples/mnist/models/mnist/input_7"
+	}
 	model, err := mnist.LoadModel(modelFile)
 	if err != nil {
 		fmt.Println("Load model error: ", err)
 		return nil, 0, err
 	}
 	// load input
-	input, err := MNIST_Input(false)
+	input, err := MNIST_Input(dataFile, false)
 	if err != nil {
 		fmt.Println("Load input data error: ", err)
 		return nil, 0, err
@@ -47,8 +57,7 @@ func MNIST(nodeID int) ([]byte, int, error) {
 	return envBytes, int(graph.NodesCount), nil
 }
 
-func MNIST_Input(show bool) ([]float32, error) {
-	dataFile := "../../mlgo/examples/mnist/models/mnist/input_7"
+func MNIST_Input(dataFile string, show bool) ([]float32, error) {
 	buf, err := ioutil.ReadFile(dataFile)
 	if err != nil {
 		fmt.Println(err)

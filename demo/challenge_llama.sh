@@ -62,16 +62,20 @@ trap "exit_trap" SIGINT SIGTERM EXIT
 
 # --- CHALLENGE SETUP ----------------------------------------------------------
 
+workdir=$(cd $(dirname $0);cd ..; pwd)
+
 # AI model (7B-LLaMA model)
 PROGRAM_PATH="./mlgo/ml_mips/ml_mips.bin"
 MODEL_NAME="LLAMA"
-# MODEL_PATH="./mlgo/examples/mnist/models/mnist/ggml-model-small-f32-big-endian.bin"
+MODEL_PATH="$workdir/mlgo/examples/llama/models/llama-7b-fp32.bin"
+PROMPT="How to combine AI and blockchain?"
 # DATA_PATH="./mlgo/examples/mnist/models/mnist/input_7"
 
 export PROGRAM_PATH=$PROGRAM_PATH
 export MODEL_NAME=$MODEL_NAME
 export MODEL_PATH=$MODEL_PATH
-export DATA_PATH=$DATA_PATH
+# export DATA_PATH=$DATA_PATH
+export PROMPT=$PROMPT
 
 # challenge ID, read by respond.js and assert.js
 export ID=0
@@ -85,7 +89,7 @@ mkdir -p /tmp/cannon_fault/checkpoint
 
 # stored in /tmp/cannon/golden.json
 shout "GENERATING INITIAL MEMORY STATE CHECKPOINT"
-mlvm/mlvm --basedir=/tmp/cannon --program="$PROGRAM_PATH" --modelName="$MODEL_NAME" --target=0 --nodeID 0
+mlvm/mlvm --basedir=/tmp/cannon --program="$PROGRAM_PATH" --modelName="$MODEL_NAME" --model="$MODEL_PATH" --prompt="$PROMPT" --target=0 --nodeID 0
 
 shout "DEPLOYING CONTRACTS"
 npx hardhat run scripts_layered/deploy.js --network localhost

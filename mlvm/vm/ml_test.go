@@ -17,7 +17,7 @@ func TestMNIST(t *testing.T) {
 		return 
 	}
 	// load input
-	input, err := MNIST_Input(true)
+	input, err := MNIST_Input("../../mlgo/examples/mnist/models/mnist/input_7", true)
 	if err != nil {
 		fmt.Println("Load input data error: ", err)
 		return 
