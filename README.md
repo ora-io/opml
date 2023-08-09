@@ -3,7 +3,7 @@
 
 ---
 
-OPML enables off-chain AI model inference using optimistic approach with an on chain interactive dispute engine implementing EVM-equivalent fault proofs.
+OPML enables off-chain AI model inference using optimistic approach with an on chain interactive dispute engine implementing fault proofs.
 
 ## Directory Layout
 
@@ -36,10 +36,9 @@ sh ./demo/challenge_simple.sh
 
 ## License
 
-Most of this code is MIT licensed, minigeth is LGPL3.
+This code is MIT licensed.
 
 Part of this code is borrowed from `ethereum-optimism/cannon`
 
 Note: This code is unaudited. It in NO WAY should be used to secure any money until a lot more
-testing and auditing are done. I have deployed this nowhere, have advised against deploying it, and
-make no guarantees of security of ANY KIND.
+testing and auditing are done. 
