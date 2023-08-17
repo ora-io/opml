@@ -123,6 +123,8 @@ func TestMLGo_MNIST(t *testing.T){
 	fmt.Printf("PC: %x\n", ram[0xC0000080])
 
 	fmt.Println("total steps: ", totalSteps)
+
+	SaveOutput("/tmp/cannon/output", ram)
 }
 
 

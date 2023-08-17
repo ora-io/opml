@@ -371,5 +371,6 @@ func MIPSRunCompatible(basedir string, target int, programPath string, modelPath
 		fmt.Println("lastStep: ", lastStep)
 		WriteCheckpoint(ram, fmt.Sprintf("%s/checkpoint_final.json", basedir), lastStep)
 		fmt.Printf("PC: %x\n", ram[0xC0000080])
+		SaveOutput(fmt.Sprintf("%s/output", basedir), ram)
 	}
 }
