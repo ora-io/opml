@@ -56,7 +56,7 @@ exit_trap() {
     # group. (cf. https://stackoverflow.com/a/2173421)
     trap - SIGTERM && kill -- -$$
 }
-trap "exit_trap" SIGINT SIGTERM EXIT
+# trap "exit_trap" SIGINT SIGTERM EXIT
 
 
 
@@ -87,7 +87,9 @@ shout "DEPLOYING CONTRACTS"
 npx hardhat run scripts/deploy.js --network localhost
 
 # challenger will use same initial memory checkpoint and deployed contracts
-cp /tmp/cannon/{golden,deployed}.json /tmp/cannon_fault/
+cp /tmp/cannon/golden.json /tmp/cannon_fault/
+cp /tmp/cannon/deployed.json /tmp/cannon_fault/
+
 
 shout "COMPUTING FAKE MIPS FINAL MEMORY CHECKPOINT"
 BASEDIR=/tmp/cannon_fault mlvm/mlvm --program="$PROGRAM_PATH" --model="$MODEL_PATH" --data="$DATA_PATH" --mipsVMCompatible
@@ -99,7 +101,8 @@ shout "STARTING CHALLENGE"
 BASEDIR=/tmp/cannon_fault npx hardhat run scripts/challenge.js --network localhost
 
 shout "BINARY SEARCH"
-for i in {1..25}; do
+for i in $(seq 1 1 25); do
+# for i in {1..25}; do
     echo ""
     echo "--- STEP $i / 25 ---"
     echo ""

@@ -116,7 +116,7 @@ function getTrieAtStep(step) {
   if (!fs.existsSync(fn)) {
     // console.log("running mipsevm")
     console.log("running program: ", programPath)
-    child_process.execSync("mlvm/mlvm --mipsVMCompatible" + " --target="+step.toString() + " --program="+programPath + " --model="+modelPath + " --data="+dataPath, {stdio: 'inherit'})
+    child_process.execSync("mlvm/mlvm --mipsVMCompatible" + " --target="+step.toString() + " --program="+programPath + " --model="+modelPath + " --data="+dataPath) // without {stdio: 'inherit'}
   }
 
   return JSON.parse(fs.readFileSync(fn))

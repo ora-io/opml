@@ -90,7 +90,8 @@ contract Challenge {
   /// @notice Proposer should first upload the results and stake some money, waiting for the challenge
   ///         process. Note that the results can only be set once (TODO)
   function uploadResult(bytes calldata data) public {
-    require(data.length % 32 == 0, "the result should 32-align");
+    // %4
+    // require(data.length % 32 == 0, "the result should 32-align");
     proposedResults = data;
   }
 
