@@ -124,11 +124,13 @@ function getTrieAtStep(step, nodeID, isLastLayer) {
   if (!fs.existsSync(fn)) {
     // console.log("running mipsevm")
     console.log("running program: ", programPath)
-    const inputPath = basedir+"/data/node_" + nodeID.toString()
+    // const inputPath = basedir+"/data/node_" + nodeID.toString()
+    const inputPath = isLastLayer ? (basedir+"/data/node_" + nodeID.toString()) : (dataPath)
     const lastLayer = isLastLayer ?  " --lastLayer" : " "
     const command = "mlvm/mlvm" + lastLayer + " --target="+step.toString() + " --program="+programPath + " --modelName="+modelName + " --data="+inputPath + " --nodeID="+nodeID.toString() + " --model="+modelPath + " --prompt="+prompt
     console.log(command)
-    child_process.execSync(command, {stdio: 'inherit'})
+    child_process.execSync(command)
+    // child_process.execSync(command, {stdio: 'inherit'})
   }
 
   return JSON.parse(fs.readFileSync(fn))

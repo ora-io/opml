@@ -106,6 +106,81 @@ type Params struct {
 	Prompt string
 }
 
+type MPParams struct {
+	ProgramPath string
+	ModelPath string
+	InputPath string
+	Basedir string
+	ModelName string
+
+	CurPhase int
+	TotalPhase int 
+	Checkpoints []int
+
+	// optional
+	Prompt string
+}
+
+func ParseMPParams() (*MPParams, error) {
+	var mpMode bool
+	flag.BoolVar(&mpMode, "mp", false, "enable mpMode")
+	if !mpMode {
+		return nil, nil
+	}
+
+	var programPath string
+	var modelPath string
+	var inputPath string
+	var basedir string
+	var modelName string
+
+	var curPhase int
+	var totalPhase int 
+	var checkpoints_json string
+
+	var prompt string
+
+	defaultBasedir := os.Getenv("BASEDIR")
+	if len(defaultBasedir) == 0 {
+		defaultBasedir = "/tmp/cannon"
+	}
+	flag.StringVar(&basedir, "basedir", defaultBasedir, "Directory to read inputs, write outputs, and cache preimage oracle data.")
+	flag.StringVar(&programPath, "program", MIPS_PROGRAM, "Path to binary file containing the program to run")
+	flag.StringVar(&modelPath, "model", "", "Path to binary file containing the AI model")
+	flag.StringVar(&inputPath, "data", "", "Path to binary file containing the input of AI model")
+	flag.StringVar(&modelName, "modelName", "MNIST", "run MNIST or LLAMA")
+	flag.IntVar(&curPhase, "curPhase", 0, "The current phase")
+	flag.IntVar(&totalPhase, "totalPhase", 0, "The total number of phases")
+	flag.StringVar(&checkpoints_json, "checkpoints", "[]", "The checkpoint includes the phase info, e.g., [1, 2, 3] means Phase-0 is at stage 1, Phase-1 is at stage 2, Phase-2 is at stage 3")
+
+	flag.StringVar(&prompt, "prompt", "How to combine AI and blockchain?", "prompt for LLaMA")
+
+	checkpoints, err := Strings2IntList(checkpoints_json)
+	if err != nil {
+		fmt.Println("ParseMPParams error: ", err)
+		return nil, err
+	}
+	if err := ValidateCheckpoints(checkpoints, totalPhase, curPhase); err != nil {
+		fmt.Println("ParseMPParams error: ", err)
+		return nil, err		
+	}
+
+	params := &MPParams{
+		ProgramPath: programPath,
+		ModelPath: modelPath,
+		InputPath: inputPath,
+		Basedir: basedir,
+		ModelName: modelName,
+
+		CurPhase: curPhase,
+		TotalPhase: totalPhase,
+		Checkpoints: checkpoints,
+
+		Prompt: prompt,
+	}
+	return params, nil
+}
+
 func ParseParams() *Params {
 	var target int
 	var programPath string

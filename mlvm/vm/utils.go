@@ -3,6 +3,8 @@ package vm
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -56,4 +58,19 @@ func SaveOutput(outputPath string, ram map[uint32](uint32)) error {
 	defer fout.Close()
 	_, err = fout.Write(output)
 	return err  
+}
+
+func Strings2IntList(data string) ([]int, error) {
+	var list []int
+	err := json.Unmarshal([]byte(data), &list)
+	return list, err
+}
+
+func ValidateCheckpoints(checkpoints []int, totalPhase int, curPhase int) error {
+	err := errors.New(fmt.Sprintf("checkpoints list does not match! checkpoints: %v, totalPhase: %v, curPhase: %v", checkpoints, totalPhase, curPhase))
+	good := (curPhase < totalPhase) && (len(checkpoints) == curPhase + 1)
+	if !good {
+		return err
+	}
+	return nil 
 }
