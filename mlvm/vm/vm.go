@@ -27,6 +27,13 @@ func WriteCheckpointWithNodeID(ram map[uint32](uint32), fn string, step int, nod
 	ioutil.WriteFile(fn, dat, 0644)
 }
 
+func MPWriteCheckpoint(ram map[uint32](uint32), fn string, checkpoints []int, stepCount []int) {
+	trieroot := RamToTrie(ram)
+	dat := MPTrieToJson(trieroot, checkpoints, stepCount)
+	fmt.Printf("writing %s len %d with root %s\n", fn, len(dat), trieroot)
+	ioutil.WriteFile(fn, dat, 0644)
+}
+
 // memory layout in MIPS
 const (
 	INPUT_ADDR = 0x31000000
@@ -116,17 +123,13 @@ type MPParams struct {
 	CurPhase int
 	TotalPhase int 
 	Checkpoints []int
+	StepCount []int
 
 	// optional
 	Prompt string
 }
 
 func ParseMPParams() (*MPParams, error) {
-	var mpMode bool
-	flag.BoolVar(&mpMode, "mp", false, "enable mpMode")
-	if !mpMode {
-		return nil, nil
-	}
 
 	var programPath string
 	var modelPath string
@@ -137,6 +140,7 @@ func ParseMPParams() (*MPParams, error) {
 	var curPhase int
 	var totalPhase int 
 	var checkpoints_json string
+	var stepcount_json string
 
 	var prompt string
 
@@ -152,6 +156,8 @@ func ParseMPParams() (*MPParams, error) {
 	flag.IntVar(&curPhase, "curPhase", 0, "The current phase")
 	flag.IntVar(&totalPhase, "totalPhase", 0, "The total number of phases")
 	flag.StringVar(&checkpoints_json, "checkpoints", "[]", "The checkpoint includes the phase info, e.g., [1, 2, 3] means Phase-0 is at stage 1, Phase-1 is at stage 2, Phase-2 is at stage 3")
+	// [0] means the golden of the initial stage, [1] means the image at the begin 1st stage
+	flag.StringVar(&stepcount_json, "stepCount", "[]", "the total number of steps at the current phases")
 
 	flag.StringVar(&prompt, "prompt", "How to combine AI and blockchain?", "prompt for LLaMA")
 
@@ -165,6 +171,20 @@ func ParseMPParams() (*MPParams, error) {
 		return nil, err		
 	}
 
+	stepCount, err := Strings2IntList(stepcount_json)
+	if err != nil {
+		fmt.Println("ParseMPParams error: ", err)
+		return nil, err
+	}
+	padding := totalPhase - len(stepCount)
+	for i := 0; i < padding; i++ {
+		stepCount = append(stepCount, 0)
+	}
+	if len(stepCount) > totalPhase {
+		stepCount = stepCount[:totalPhase]
+	}
+	// padding with zero, such that len(stepCount) == totalPhase
+
 	params := &MPParams{
 		ProgramPath: programPath,
 		ModelPath: modelPath,
@@ -175,6 +195,7 @@ func ParseMPParams() (*MPParams, error) {
 		CurPhase: curPhase,
 		TotalPhase: totalPhase,
 		Checkpoints: checkpoints,
+		StepCount: stepCount,
 
 		Prompt: prompt,
 	}
@@ -236,8 +257,50 @@ func ParseParams() *Params {
 }
 
 func Run() {
-	params := ParseParams()
-	RunWithParams(params)
+	var mpMode bool
+	flag.BoolVar(&mpMode, "mp", false, "enable mpMode")
+	if mpMode {
+		mpParams, err := ParseMPParams()
+		if err != nil {
+			fmt.Println("ParseMPParams error: ", err)
+			return 
+		}
+		RunWithMPParams(mpParams)
+	} else {
+		params := ParseParams()
+		RunWithParams(params)
+	}
+
+}
+
+func RunWithMPParams(params *MPParams) {
+	// single-phase opml, equal to params.MIPSVMCompatible
+	if params.TotalPhase == 1 {
+		outputGolden := (params.Checkpoints[0] == 0)
+		MIPSRunCompatible(params.Basedir, params.Checkpoints[0], params.ProgramPath, params.ModelPath, params.InputPath, outputGolden)
+		return 
+	}
+
+	// multi-phase opml
+	if len(params.Checkpoints) == params.TotalPhase {
+		// the last phase, we should run it in VM
+		// assume we are bisect to one node on computation graph now
+		MPMIPSRun(params) 
+		return 
+	} else if len(params.Checkpoints) == params.TotalPhase - 1 {
+		// the penultimate, dispute on the computation graph
+		nodeFile, err := MPGraphRun(params)
+		if err != nil {
+			fmt.Println("layer run error: ", err, "nodeFile: ", nodeFile)
+			return
+		}
+		params.Checkpoints = append(params.Checkpoints, 0)
+		MPMIPSRun(params) // init golden for the last phase
+		return 
+	} else {
+		// multi-phase opml
+		MPRun(params)
+	}
 }
 
 func RunWithParams(params *Params) {
@@ -307,6 +370,42 @@ func LayerRun(basedir string, nodeID int, modelName string, params *Params) (str
 	return fileName, nodeCount, nil
 }
 
+func MPGraphRun(params *MPParams) (string,  error) {
+	var envBytes []byte
+	var err error
+	var nodeCount int
+
+	nodeID := params.Checkpoints[params.TotalPhase - 2]
+
+	if params.ModelName == "MNIST" {
+		envBytes, nodeCount, err = MNIST(nodeID, params.ModelPath, params.InputPath)
+	} else { // if modelName == "LLAMA"
+		envBytes, nodeCount, err = LLAMA(nodeID, params.ModelPath, params.Prompt)
+	}
+
+	// update
+	params.StepCount[params.TotalPhase - 2] = nodeCount
+
+	if err != nil {
+		fmt.Println("Layer run error: ", err)
+		return "", err
+	}
+
+	fileName := fmt.Sprintf("%s/data/%s.dat", params.Basedir, IntList2String(params.Checkpoints))
+	err = saveDataToFile(envBytes, fileName)
+
+	if err != nil {
+		fmt.Println("Save data error: ", err)
+		return fileName, err
+	}
+
+	return fileName, nil
+}
+
+func MPRun(params *MPParams) {
+
+}
+
 func saveDataToFile(data []byte, filename string) error {
 	fout, err := os.Create(filename)
 	if err != nil {
@@ -345,10 +444,7 @@ func MIPSRun(basedir string, target int, nodeID int, programPath string, inputPa
 			SyncRegs(mu, ram)
 			fn := fmt.Sprintf("%s/checkpoint_%d_%d.json", basedir, nodeID, step)
 			WriteCheckpointWithNodeID(ram, fn, step, nodeID, nodeCount)
-			if step == target {
-				// done
-				mu.RegWrite(uc.MIPS_REG_PC, 0x5ead0004)
-			}
+			mu.RegWrite(uc.MIPS_REG_PC, 0x5ead0004)
 		}
 		lastStep = step + 1
 	})
@@ -386,6 +482,84 @@ func MIPSRun(basedir string, target int, nodeID int, programPath string, inputPa
 	}
 }
 
+func MPMIPSRun(params *MPParams) {
+	regfault := -1
+	regfault_str, regfault_valid := os.LookupEnv("REGFAULT")
+	if regfault_valid {
+		regfault, _ = strconv.Atoi(regfault_str)
+	}
+
+	// step 1, generate the checkpoints every million steps using unicorn
+	ram := make(map[uint32](uint32))
+
+	lastStep := 1
+	reachFinalState := true // if the target >= total step, the targt will not be saved
+
+	target := params.Checkpoints[params.TotalPhase - 1]
+
+	mu := GetHookedUnicorn(params.Basedir, ram, func(step int, mu uc.Unicorn, ram map[uint32](uint32)) {
+		if step == regfault {
+			fmt.Printf("regfault at step %d\n", step)
+			mu.RegWrite(uc.MIPS_REG_V0, 0xbabababa)
+		}
+		if step == target {
+			reachFinalState = false
+			SyncRegs(mu, ram)
+			fn := fmt.Sprintf("%s/checkpoint/%s.json", params.Basedir, IntList2String(params.Checkpoints))
+			MPWriteCheckpoint(ram, fn, params.Checkpoints, params.StepCount)
+			mu.RegWrite(uc.MIPS_REG_PC, 0x5ead0004)
+		}
+		lastStep = step + 1
+	})
+
+	ZeroRegisters(ram)
+	// not ready for golden yet
+	LoadMappedFileUnicorn(mu, params.ProgramPath, ram, 0)
+	// load input
+	if params.InputPath != "" {
+		LoadInputData(mu, params.InputPath, ram)
+	}
+	
+	// outputGolden := (params.Checkpoints[len(params.Checkpoints) - 1] == 0)
+	// if outputGolden {
+	// 	fn := fmt.Sprintf("%s/%d_golden.json", params.Basedir, nodeID)
+	// 	MPWriteCheckpoint(ram, fn, params.Checkpoints, params.StepCount)
+	// 	fmt.Println("Writing golden snapshot and exiting early without execution")
+	// 	return 
+	// }
+
+	// do not need if we just run pure computation task
+	// LoadMappedFileUnicorn(mu, fmt.Sprintf("%s/input", basedir), ram, 0x30000000)
+
+	mu.Start(0, 0x5ead0004)
+
+
+	if reachFinalState {
+		fmt.Printf("reach the final state, total step: %d, target: %d\n", lastStep, target)
+		// update
+		params.Checkpoints[params.TotalPhase - 1] = lastStep
+		params.StepCount[params.TotalPhase - 1] = lastStep
+
+		fn := fmt.Sprintf("%s/checkpoint/%s.json", params.Basedir, IntList2String(params.Checkpoints))
+		MPWriteCheckpoint(ram, fn, params.Checkpoints, params.StepCount)
+	}
+
+
+	// only for the name
+	targetCheckpoints := make([]int, len(params.Checkpoints))
+	copy(targetCheckpoints, params.Checkpoints)
+	targetCheckpoints[len(targetCheckpoints) - 1] = -1 // replace the last one with
+
+	if target == -1 {
+		fmt.Println("lastStep: ", lastStep)
+		// update
+		params.Checkpoints[params.TotalPhase - 1] = lastStep
+		params.StepCount[params.TotalPhase - 1] = lastStep
+		fn := fmt.Sprintf("%s/checkpoint/%s.json", params.Basedir, IntList2String(targetCheckpoints))
+		MPWriteCheckpoint(ram, fn, params.Checkpoints, params.StepCount)
+	}
+}
+
 func MIPSRunCompatible(basedir string, target int, programPath string, modelPath string, inputPath string, outputGolden bool) {
 	regfault := -1
 	regfault_str, regfault_valid := os.LookupEnv("REGFAULT")
@@ -409,10 +583,7 @@ func MIPSRunCompatible(basedir string, target int, programPath string, modelPath
 			SyncRegs(mu, ram)
 			fn := fmt.Sprintf("%s/checkpoint_%d.json", basedir, step)
 			WriteCheckpoint(ram, fn, step)
-			if step == target {
-				// done
-				mu.RegWrite(uc.MIPS_REG_PC, 0x5ead0004)
-			}
+			mu.RegWrite(uc.MIPS_REG_PC, 0x5ead0004)
 		}
 		lastStep = step + 1
 	})

@@ -26,6 +26,13 @@ type Jtree struct {
 	Preimages map[common.Hash][]byte `json:"preimages"`
 }
 
+type MPJtree struct {
+	Root        common.Hash            `json:"root"`
+	Checkpoints []int				   `json:"checkpoints"`
+	StepCount   []int				   `json:"stepCount"`
+	Preimages   map[common.Hash][]byte `json:"preimages"`
+}
+
 func TrieToJson(root common.Hash, step int) []byte {
 	b, err := json.Marshal(Jtree{Preimages: Preimages, Step: step, Root: root})
 	check(err)
@@ -36,6 +43,20 @@ func TrieToJsonWithNodeID(root common.Hash, step int, nodeID int, nodeCount int)
 	b, err := json.Marshal(Jtree{Preimages: Preimages, Step: step, NodeID: nodeID, NodeCount: nodeCount, Root: root})
 	check(err)
 	return b
+}
+
+func MPTrieToJson(root common.Hash, checkpoints []int, stepCount []int) []byte {
+	b, err := json.Marshal(MPJtree{Preimages: Preimages, Checkpoints: checkpoints, StepCount: stepCount, Root: root})
+	check(err)
+	return b
+}
+
+func MPTrieFromJson(dat []byte) (*MPJtree) {
+	var j MPJtree
+	err := json.Unmarshal(dat, &j)
+	check(err)
+	Preimages = j.Preimages
+	return &j
 }
 
 func TrieFromJson(dat []byte) (common.Hash, int) {

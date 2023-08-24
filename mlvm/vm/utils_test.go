@@ -20,3 +20,9 @@ func TestJSON(t *testing.T) {
 	}
 	fmt.Println(string(new_str))
 }
+
+
+func TestXxx(t *testing.T) {
+	data, _ := Strings2IntList("[]")
+	fmt.Println(data)
+}

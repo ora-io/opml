@@ -64,7 +64,15 @@ func Strings2IntList(data string) ([]int, error) {
 	var list []int
 	err := json.Unmarshal([]byte(data), &list)
 	return list, err
-}
+} 
+
+func IntList2String(list []int) (string) {
+	data, err := json.Marshal(list)
+	if err != nil {
+		return "[]"
+	}
+	return string(data)
+} 
 
 func ValidateCheckpoints(checkpoints []int, totalPhase int, curPhase int) error {
 	err := errors.New(fmt.Sprintf("checkpoints list does not match! checkpoints: %v, totalPhase: %v, curPhase: %v", checkpoints, totalPhase, curPhase))
