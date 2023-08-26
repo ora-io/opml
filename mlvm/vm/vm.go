@@ -131,6 +131,9 @@ type MPParams struct {
 
 func ParseMPParams() (*MPParams, error) {
 
+	var mp bool
+	flag.BoolVar(&mp, "mp", false, "enable mp mode")
+
 	var programPath string
 	var modelPath string
 	var inputPath string
@@ -160,6 +163,8 @@ func ParseMPParams() (*MPParams, error) {
 	flag.StringVar(&stepcount_json, "stepCount", "[]", "the total number of steps at the current phases")
 
 	flag.StringVar(&prompt, "prompt", "How to combine AI and blockchain?", "prompt for LLaMA")
+
+	flag.Parse()
 
 	checkpoints, err := Strings2IntList(checkpoints_json)
 	if err != nil {
@@ -257,9 +262,13 @@ func ParseParams() *Params {
 }
 
 func Run() {
-	var mpMode bool
-	flag.BoolVar(&mpMode, "mp", false, "enable mpMode")
+	fmt.Println("start!!!")
+	mpMode := os.Args[1] == "--mp"
+	// flag.BoolVar(&mpMode, "mpMode", false, "enable mpMode")
+	// fmt.Println("mpMode: ", mpMode)
+	// fmt.Println(os.Args)
 	if mpMode {
+		fmt.Println("run in mp mode")
 		mpParams, err := ParseMPParams()
 		if err != nil {
 			fmt.Println("ParseMPParams error: ", err)
@@ -296,6 +305,15 @@ func RunWithMPParams(params *MPParams) {
 		}
 		params.Checkpoints = append(params.Checkpoints, 0)
 		MPMIPSRun(params) // init golden for the last phase
+		// copy the file as the checkpoint output, should modify it later
+		err = CopyFile(fmt.Sprintf("%s/checkpoint/%s.json", params.Basedir, IntList2String(params.Checkpoints)), fmt.Sprintf("%s/checkpoint/%s.json",  params.Basedir, IntList2String(params.Checkpoints[:len(params.Checkpoints)-1])))
+		fmt.Println("copyFile error: ", err)
+		// command := fmt.Sprintf("cp %s/checkpoint/'%s'.json %s/checkpoint/'%s'.json", params.Basedir, IntList2String(params.Checkpoints), params.Basedir, IntList2String(params.Checkpoints[:len(params.Checkpoints)-1]))
+		// out, err := exec.Command("cp", fmt.Sprintf("%s/checkpoint/'%s'.json", params.Basedir, IntList2String(params.Checkpoints)), fmt.Sprintf("%s/checkpoint/'%s'.json",  params.Basedir, IntList2String(params.Checkpoints[:len(params.Checkpoints)-1]))).Output()
+		// fmt.Println("copy command: ", command, " out: ", out)
+		// if err != nil {
+		// 	fmt.Println("copy error: ", err)
+		// }
 		return 
 	} else {
 		// multi-phase opml
@@ -466,8 +484,9 @@ func MIPSRun(basedir string, target int, nodeID int, programPath string, inputPa
 	// do not need if we just run pure computation task
 	// LoadMappedFileUnicorn(mu, fmt.Sprintf("%s/input", basedir), ram, 0x30000000)
 
+	SyncRegs(mu, ram)
 	mu.Start(0, 0x5ead0004)
-
+	SyncRegs(mu, ram)
 
 	if reachFinalState {
 		fmt.Printf("reach the final state, total step: %d, target: %d\n", lastStep, target)
@@ -531,7 +550,9 @@ func MPMIPSRun(params *MPParams) {
 	// do not need if we just run pure computation task
 	// LoadMappedFileUnicorn(mu, fmt.Sprintf("%s/input", basedir), ram, 0x30000000)
 
+	SyncRegs(mu, ram)
 	mu.Start(0, 0x5ead0004)
+	SyncRegs(mu, ram)
 
 
 	if reachFinalState {

@@ -1,27 +1,59 @@
 const child_process = require("child_process")
 const fs = require("fs")
 const utils = require("./utils")
+const { basedir } = require("../scripts_layered/lib")
 
 var config = {
     basedir: "/tmp/cannon",
-    programPath: "./mlgo/examples/mnist_mips/mlgo.bin",
-    modelPath: "./mlgo/examples/mnist/models/mnist/ggml-model-small-f32-big-endian.bin",
+    programPath: "./mlgo/ml_mips/ml_mips.bin",
+    modelPath: "./mlgo/examples/mnist/models/mnist/ggml-model-small-f32.bin",
     dataPath: "./mlgo/examples/mnist/models/mnist/input_7",
-    phaseNumber: 2
+    modelName: "MNIST",
+    
+    curPhase: 0,
+    totalPhase: 2,
+    checkpoints: [],
+    stepCount: []
 }
 
-function genGoldenImage(basedir=config.basedir, programPath=config.programPath, modelPath=config.modelPath, dataPath=config.dataPath) {
-    var command = "mlvm/mlvm --mipsVMCompatible --outputGolden" + " --basedir="+basedir + " --program="+programPath + " --model="+modelPath + " --data="+dataPath
+const MNIST_MIPS_MODEL = "./mlgo/examples/mnist/models/mnist/ggml-model-small-f32-big-endian.bin"
+const MNIST_MIPS_PROGRAM =  "./mlgo/examples/mnist_mips/mlgo.bin"
+
+function getConfig() {
+    var newConfig = {
+        basedir: config.basedir,
+        programPath: config.programPath,
+        modelPath: config.modelPath,
+        dataPath: config.dataPath,
+        modelName: config.modelName,
+
+        curPhase: config.curPhase,
+        totalPhase: config.totalPhase,
+        checkpoints: [...config.checkpoints],
+        stepCount: [...config.stepCount]
+    }
+    return newConfig
+}
+
+function copyConfig(config) {
+    return JSON.parse(JSON.stringify(config))
+}
+
+function genGoldenImage(config) {
+    var command = "mlvm/mlvm --mp" + " --basedir="+config.basedir + " --program="+config.programPath + " --model="+config.modelPath + " --data="+config.dataPath + " --modelName="+config.modelName + " --curPhase="+config.curPhase + " --totalPhase="+config.totalPhase + " --checkpoints="+JSON.stringify(config.checkpoints) + " --stepCount="+JSON.stringify(config.stepCount)
     console.log(command)
     child_process.execSync(command, {stdio: 'inherit'})
-    console.log("golden.json is at " + basedir+"/golden.json")
+    console.log("golden.json is at " + config.basedir+"/checkpoint/[0].json")
+    cpCommand = "cp " + config.basedir + "/checkpoint/[0,0].json " + config.basedir+"/checkpoint/[0].json"
+    child_process.execSync(cpCommand, {stdio: 'inherit'})
 }
 
 
-async function deployOPMLContract(basedir=config.basedir) {
+async function deployOPMLContract(config) {
+    const basedir=config.basedir
     let [c, m, mm] = await utils.deployContract(basedir)
     let json = {
-    "Challenge": c.address,
+    "MPChallenge": c.address,
     "MIPS": m.address,
     "MIPSMemory": mm.address,
     }
@@ -31,18 +63,20 @@ async function deployOPMLContract(basedir=config.basedir) {
 }
 
 // client
-async function initiateOPMLRequest(basedir=config.basedir, programPath=config.programPath, modelPath=config.modelPath, dataPath=config.dataPath) {
-    genGoldenImage(basedir, programPath, modelPath, dataPath)
-    info = await deployOPMLContract(basedir)
+async function initiateOPMLRequest(config) {
+    genGoldenImage(config)
+    info = await deployOPMLContract(config)
     return info
 }
 
 // run program
-function runProgram(basedir=config.basedir, programPath=config.programPath, modelPath=config.modelPath, dataPath=config.dataPath) {
-    var command = "mlvm/mlvm --mipsVMCompatible" + " --basedir="+basedir + " --program="+programPath + " --model="+modelPath + " --data="+dataPath
+function runProgram(config) {
+    const programPath = MNIST_MIPS_PROGRAM
+    const modelPath = MNIST_MIPS_MODEL
+    var command = "mlvm/mlvm --mipsVMCompatible" + " --basedir="+config.basedir + " --program="+programPath + " --model="+modelPath + " --data="+config.dataPath
     console.log(command)
     child_process.execSync(command, {stdio: 'inherit'})
-    console.log("checkpoint_final.json is at " + basedir+"/checkpoint_final.json")
+    console.log("checkpoint_final.json is at " + config.basedir+"/checkpoint_final.json")
 }
 
 function getOutput(basedir=config.basedir) {
@@ -67,14 +101,16 @@ async function getProposedResults(basedir=config.basedir) {
 }
 
 // challenger
-async function startChallenge(basedir=config.basedir) {
+async function startChallenge(config) {
+    const basedir=config.basedir
     let [c, m, mm] = await utils.deployed(basedir)
-    let startTrie = JSON.parse(fs.readFileSync(basedir+"/golden.json"))
-    let finalTrie = JSON.parse(fs.readFileSync(basedir+"/checkpoint_final.json"))
+    let startTrie = JSON.parse(fs.readFileSync(basedir+"/checkpoint/[0].json"))
+    // let finalTrie = JSON.parse(fs.readFileSync(basedir+"/checkpoint_final.json"))
+    let finalTrie = startTrie // for convenience now 
     let preimages = Object.assign({}, startTrie['preimages'], finalTrie['preimages']);
     const finalSystemState = finalTrie['root']
   
-    let args = [finalSystemState, finalTrie['step']]
+    let args = [finalSystemState, finalTrie['stepCount'][0], config.totalPhase]
     let cdat = c.interface.encodeFunctionData("initiatePureComputationChallenge", args)
     let nodes = await utils.getTrieNodesForCall(c, c.address, cdat, preimages)
   
@@ -94,48 +130,126 @@ async function startChallenge(basedir=config.basedir) {
 
 const RespondState = {
     END: 'END',
+    NEXT: "NEXT",
     RESPOND: 'RESPOND',
     WAIT: 'WAIT'
 }
 
 // challenger and submitter
 // return state
-async function respond(challengeId, isChallenger, basedir) {
+async function respond(challengeId, isChallenger, config) {
     // console.log("start respond")
-    let [c, m, mm] = await utils.deployed(basedir)
+    let [c, m, mm] = await utils.deployed(config.basedir)
     let step = (await c.getStepNumber(challengeId)).toNumber()
     console.log("searching step", step)
-  
-    if (!(await c.isSearching(challengeId))) {
-      console.log("search is done")
-      return RespondState.END
-    }
 
-    // see if it's proposed or not
-    const proposed = await c.getProposedState(challengeId)
-    const isProposing = proposed == "0x0000000000000000000000000000000000000000000000000000000000000000"
-    if (isProposing != isChallenger) {
-        console.log("bad challenger state")
-        return RespondState.WAIT
+    let curLayer = (await c.getCurrentLayer(challengeId)).toNumber()
+    console.log("current layer: ", curLayer)
+    config.curPhase = curLayer
+
+    let nodeID = (await c.getNodeID(challengeId)).toNumber()
+    let isSearching = (await c.isSearching(challengeId))
+  
+
+    config.checkpoints[curLayer] = step
+    if (curLayer == 1) {
+        config.checkpoints[0] = nodeID    
     }
-    let thisTrie = utils.getTrieAtStep(basedir, config.programPath, config.modelPath, config.dataPath, step)
-    const root = thisTrie['root']
-    console.log("new root", root)
-    let ret
-    if (isProposing) {
-      ret = await c.proposeState(challengeId, root)
+    
+
+    if (curLayer == 0) {
+        nodeID = step
+        if (!isSearching) {
+            console.log("enter the next layer")
+            // [xxx, 0]
+            let newConfig = copyConfig(config)
+            newConfig.dataPath = newConfig.basedir + "/data/" + JSON.stringify(newConfig.checkpoints) + ".dat"
+            newConfig.checkpoints.push(0)
+            newConfig.curPhase += 1
+            let startTrie = utils.getTrieAtStep(newConfig)
+
+            newConfig = copyConfig(config)
+            newConfig.dataPath = newConfig.basedir + "/data/" + JSON.stringify(newConfig.checkpoints) + ".dat"
+            newConfig.checkpoints.push(-1)
+            newConfig.curPhase += 1
+            let finalTrie = utils.getTrieAtStep(newConfig)
+
+            console.log(challengeId, startTrie['root'], finalTrie['root'], finalTrie['stepCount'])
+            ret = await c.toNextLayer(challengeId, startTrie['root'], finalTrie['root'], finalTrie['stepCount'][newConfig.curPhase])
+            let receipt = await ret.wait()
+            console.log("to next layer done", receipt.blockNumber)
+            return RespondState.NEXT
+        } else {
+            const proposed = await c.getProposedState(challengeId)
+            const isProposing = proposed == "0x0000000000000000000000000000000000000000000000000000000000000000"
+            if (isProposing != isChallenger) {
+                console.log("bad challenger state")
+                return RespondState.WAIT
+            }
+            console.log("isProposing", isProposing)
+
+            newConfig = copyConfig(config)
+            let thisTrie = utils.getTrieAtStep(newConfig)
+            const root = thisTrie['root']
+            console.log("new root", root)
+
+            let ret
+            if (isProposing) {
+                ret = await c.proposeState(challengeId, root)
+            } else {
+                ret = await c.respondState(challengeId, root)
+            }
+            let receipt = await ret.wait()
+            console.log("done", receipt.blockNumber)
+            return RespondState.RESPOND
+        }
+
     } else {
-      ret = await c.respondState(challengeId, root)
+        // curlayer = 1 // mipsvm
+        if (!isSearching) {
+            console.log("search is done")
+            return RespondState.END
+        }
+
+        // see if it's proposed or not
+        const proposed = await c.getProposedState(challengeId)
+        const isProposing = proposed == "0x0000000000000000000000000000000000000000000000000000000000000000"
+        if (isProposing != isChallenger) {
+            console.log("bad challenger state")
+            return RespondState.WAIT
+        }
+        console.log("isProposing", isProposing)
+        newConfig = copyConfig(config)
+        newConfig.dataPath = newConfig.basedir + "/data/" + JSON.stringify(newConfig.checkpoints.slice(0,-1)) + ".dat"
+        let thisTrie = utils.getTrieAtStep(newConfig)
+        const root = thisTrie['root']
+        console.log("new root", root)
+
+        let ret
+        if (isProposing) {
+            ret = await c.proposeState(challengeId, root)
+        } else {
+            ret = await c.respondState(challengeId, root)
+        }
+        let receipt = await ret.wait()
+        console.log("done", receipt.blockNumber)
+        return RespondState.RESPOND
     }
-    let receipt = await ret.wait()
-    console.log("done", receipt.blockNumber)
-    return RespondState.RESPOND
 }
 
-async function assert(challengeId, isChallenger, basedir=config.basedir) {
-    let [c, m, mm] = await utils.deployed(basedir)
+async function assert(challengeId, isChallenger, config) {
+    let [c, m, mm] = await utils.deployed(config.basedir)
     let step = (await c.getStepNumber(challengeId)).toNumber()
     console.log("searching step", step)
+
+    let nodeID = (await c.getNodeID(challengeId)).toNumber()
+    console.log("nodeID: ", nodeID)
+
+    let curLayer = (await c.getCurrentLayer(challengeId)).toNumber()
+    console.log("curLayer: ", curLayer)
+
+    config.checkpoints[curLayer] = step
+    config.checkpoints[0] = nodeID
   
     if (await c.isSearching(challengeId)) {
       console.log("search is NOT done")
@@ -152,8 +266,18 @@ async function assert(challengeId, isChallenger, basedir=config.basedir) {
       cdat = c.interface.encodeFunctionData("denyStateTransition", [challengeId])
     }
   
-    let startTrie = utils.getTrieAtStep(basedir, config.programPath, config.modelPath, config.dataPath, step)
-    let finalTrie = utils.getTrieAtStep(basedir, config.programPath, config.modelPath, config.dataPath, step+1)
+    let newConfig = copyConfig(config)
+    newConfig.dataPath = newConfig.basedir + "/data/" + JSON.stringify(newConfig.checkpoints.slice(0,-1)) + ".dat"
+    let startTrie = utils.getTrieAtStep(newConfig)
+    // let startTrie = utils.getTrieAtStep(basedir, config.programPath, config.modelPath, config.dataPath, step)
+
+
+    newConfig = copyConfig(config)
+    newConfig.checkpoints[(newConfig.checkpoints).length - 1] += 1 // the next step
+    newConfig.dataPath = newConfig.basedir + "/data/" + JSON.stringify(newConfig.checkpoints.slice(0,-1)) + ".dat"
+    let finalTrie = utils.getTrieAtStep(newConfig)
+    // let finalTrie = utils.getTrieAtStep(basedir, config.programPath, config.modelPath, config.dataPath, step+1)
+    
     let preimages = Object.assign({}, startTrie['preimages'], finalTrie['preimages']);
   
     let nodes = await utils.getTrieNodesForCall(c, c.address, cdat, preimages)
@@ -181,5 +305,6 @@ module.exports = {
     assert,
     config,
     getOutput,
-    startChallenge
+    startChallenge,
+    getConfig,
 }

@@ -94,7 +94,7 @@ contract MPChallenge {
   /// @notice Proposer should first upload the results and stake some money, waiting for the challenge
   ///         process. Note that the results can only be set once (TODO)
   function uploadResult(bytes calldata data) public {
-    require(data.length % 32 == 0, "the result should 32-align");
+    // require(data.length % 32 == 0, "the result should 32-align");
     proposedResults = data;
   }
 
@@ -270,6 +270,8 @@ contract MPChallenge {
   /// @notice Emitted when the challenger can provably be shown to be correct about his assertion.
   event ChallengerWins(uint256 challengeId);
 
+  event DebugState(bytes32 state);
+
   /// @notice Emitted when the challenger can provably be shown to be wrong about his assertion.
   event ChallengerLoses(uint256 challengeId);
 
@@ -294,6 +296,11 @@ contract MPChallenge {
     require(!isSearching(challengeId), "binary search not finished");
 
     bytes32 stepState = mips.Step(c.assertedState[c.currentLayer][c.L[c.currentLayer]]);
+
+    // emit DebugState(c.assertedState[c.currentLayer][c.L[c.currentLayer]]);
+    // emit DebugState(stepState);
+    // emit DebugState(c.assertedState[c.currentLayer][c.R[c.currentLayer]]);
+
     require(stepState == c.assertedState[c.currentLayer][c.R[c.currentLayer]], "wrong asserted state for challenger");
 
     // pay out bounty!!

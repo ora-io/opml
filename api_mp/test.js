@@ -7,22 +7,30 @@ async function main() {
     const submitterDir = "/tmp/cannon"
     const challengerDir = "/tmp/cannon_fault"
 
+    var submitterConfig = api.getConfig()
+    submitterConfig.basedir = submitterDir
+
+    var challengerConfig = api.getConfig()
+    challengerConfig.basedir = challengerDir
+
     // init
     child_process.execSync("rm -rf /tmp/cannon/* /tmp/cannon_fault/*", {stdio: 'inherit'})
-    child_process.execSync("mkdir -p /tmp/cannon", {stdio: 'inherit'})
-    child_process.execSync("mkdir -p /tmp/cannon_fault", {stdio: 'inherit'})
+    child_process.execSync("mkdir -p /tmp/cannon/checkpoint /tmp/cannon/data", {stdio: 'inherit'})
+    child_process.execSync("mkdir -p /tmp/cannon_fault/checkpoint /tmp/cannon_fault/data", {stdio: 'inherit'})
 
     // === client ===
     // 1. create the golden image
     // 2. deploy the contract
-    deployInfo = await api.initiateOPMLRequest(submitterDir, api.config.programPath, api.config.modelPath, api.config.dataPath)
+    submitterConfig.checkpoints = [0]
+    submitterConfig.curPhase = 0
+    deployInfo = await api.initiateOPMLRequest(submitterConfig)
     console.log("contract address: ", deployInfo.Challenge)
     
     // === submitter ===
     // 0. get the data
     // 1. run the program 
     // 2. upload the result
-    api.runProgram(submitterDir, api.config.programPath, api.config.modelPath, api.config.dataPath)
+    api.runProgram(submitterConfig)
     result = await api.uploadResult(submitterDir)
     console.log("submitter upload results: ", result)
 
@@ -30,22 +38,22 @@ async function main() {
     // 0. get the data
     // 1. run the program and find the results incorrect!
     // 2. start challenge
-    child_process.execSync("cp /tmp/cannon/golden.json /tmp/cannon_fault/", {stdio: 'inherit'})
+    child_process.execSync("cp /tmp/cannon/checkpoint/[0].json /tmp/cannon_fault/checkpoint/", {stdio: 'inherit'})
     child_process.execSync("cp /tmp/cannon/deployed.json /tmp/cannon_fault/", {stdio: 'inherit'})
 
-    api.runProgram(challengerDir, api.config.programPath, api.config.modelPath, api.config.dataPath)
+    api.runProgram(challengerConfig)
     result = api.getOutput(challengerDir)
     console.log("challenger's results: ", result)
     
-    challengeId = await api.startChallenge(challengerDir)
+    challengeId = await api.startChallenge(challengerConfig)
     console.log("start challenge! challengeId: ", challengeId)
 
 
     // === interactive dispute game ===
     for (i = 0; i < 25; i++) {
         console.log("--- STEP ", i, " / 25 ---")
-        state = await api.respond(challengeId, true, challengerDir)
-        state = await api.respond(challengeId, false, submitterDir)
+        state = await api.respond(challengeId, true, challengerConfig)
+        state = await api.respond(challengeId, false, submitterConfig)
         if (state == "END") {
             console.log("bisection ends")
             break
@@ -54,9 +62,9 @@ async function main() {
 
     // === assert ===
     console.log("ASSERTING AS CHALLENGER (should fail)")
-    await api.assert(challengeId, true, challengerDir)
+    await api.assert(challengeId, true, challengerConfig)
     console.log("ASSERTING AS DEFENDER (should pass)")
-    await api.assert(challengeId, false, submitterDir)
+    await api.assert(challengeId, false, submitterConfig)
 }
 
 async function test() {

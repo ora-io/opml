@@ -42,31 +42,47 @@ async function getTrieNodesForCall(c, caddress, cdat, preimages) {
     return nodes
 }
 
-function getTrieAtStep(basedir, programPath, modelPath, dataPath, step) {
-    // console.log("getTrieAtStep step: ", step)
-    const fn = basedir+"/checkpoint_"+step.toString()+".json"
+function getTrieAtStep(config) {
+
+    var command = "mlvm/mlvm --mp" + " --basedir="+config.basedir + " --program="+config.programPath + " --model="+config.modelPath + " --data="+config.dataPath + " --modelName="+config.modelName + " --curPhase="+config.curPhase + " --totalPhase="+config.totalPhase + " --checkpoints="+JSON.stringify(config.checkpoints) + " --stepCount="+JSON.stringify(config.stepCount)
+
+    let fn  = config.basedir + "/checkpoint/" + JSON.stringify(config.checkpoints) + ".json"
   
+    console.log("getTrieAtStep fn: ", fn)
+
     if (!fs.existsSync(fn)) {
-      // console.log("running mipsevm")
-      const command = "mlvm/mlvm --mipsVMCompatible" + " --basedir="+basedir + " --target="+step.toString() + " --program="+programPath + " --model="+modelPath + " --data="+dataPath
       console.log(command)
       child_process.execSync(command)
-    //   child_process.execSync(command, {stdio: 'inherit'})
+      // child_process.execSync(command, {stdio: 'inherit'})
     }
   
     return JSON.parse(fs.readFileSync(fn))
-}
+  }
+// function getTrieAtStep(basedir, programPath, modelPath, dataPath, step) {
+//     // console.log("getTrieAtStep step: ", step)
+//     const fn = basedir+"/checkpoint_"+step.toString()+".json"
+  
+//     if (!fs.existsSync(fn)) {
+//       // console.log("running mipsevm")
+//       const command = "mlvm/mlvm --mipsVMCompatible" + " --basedir="+basedir + " --target="+step.toString() + " --program="+programPath + " --model="+modelPath + " --data="+dataPath
+//       console.log(command)
+//       child_process.execSync(command)
+//     //   child_process.execSync(command, {stdio: 'inherit'})
+//     }
+  
+//     return JSON.parse(fs.readFileSync(fn))
+// }
 
 async function deployContract(basedir) {
     const MIPS = await ethers.getContractFactory("MIPS")
     const m = await MIPS.deploy()
     const mm = await ethers.getContractAt("MIPSMemory", await m.m())
 
-    let startTrie = JSON.parse(fs.readFileSync(basedir+"/golden.json"))
+    let startTrie = JSON.parse(fs.readFileSync(basedir+"/checkpoint/[0].json"))
     let goldenRoot = startTrie["root"]
     console.log("goldenRoot is", goldenRoot)
 
-    const Challenge = await ethers.getContractFactory("Challenge")
+    const Challenge = await ethers.getContractFactory("MPChallenge")
     const c = await Challenge.deploy(m.address, goldenRoot)
 
     return [c,m,mm]
@@ -74,7 +90,7 @@ async function deployContract(basedir) {
 
 async function deployed(basedir) {
     let addresses = JSON.parse(fs.readFileSync(basedir+"/deployed.json"))
-    const c = await ethers.getContractAt("Challenge", addresses["Challenge"])
+    const c = await ethers.getContractAt("MPChallenge", addresses["MPChallenge"])
     const m = await ethers.getContractAt("MIPS", addresses["MIPS"])
     const mm = await ethers.getContractAt("MIPSMemory", addresses["MIPSMemory"])
     return [c,m,mm]

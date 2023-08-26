@@ -23,6 +23,8 @@ func TestJSON(t *testing.T) {
 
 
 func TestXxx(t *testing.T) {
-	data, _ := Strings2IntList("[]")
-	fmt.Println(data)
+	err := CopyFile("/tmp/cannon_fault/checkpoint/[3,0].json", "/tmp/cannon_fault/checkpoint/[3].json")
+	if err != nil {
+		fmt.Println(err)
+	}
 }
