@@ -147,17 +147,23 @@ async function respond(challengeId, isChallenger, config) {
     console.log("current layer: ", curLayer)
     config.curPhase = curLayer
 
+    let totalLayer = (await c.getTotalLayer(challengeId)).toNumber()
+
     let nodeID = (await c.getNodeID(challengeId)).toNumber()
     let isSearching = (await c.isSearching(challengeId))
   
 
-    config.checkpoints[curLayer] = step
-    if (curLayer == 1) {
-        config.checkpoints[0] = nodeID    
+    for (var i = 0; i <= curLayer; i++) {
+        config.checkpoints[i] = (await c.getCheckpoint(challengeId, i)).toNumber()
+        config.stepCount[i] = (await c.getStepcount(challengeId, i)).toNumber()
     }
+    // config.checkpoints[curLayer] = step
+    // if (curLayer == 1) {
+    //     config.checkpoints[0] = nodeID    
+    // }
     
 
-    if (curLayer == 0) {
+    if (curLayer == totalLayer - 2) { // the last 2nd
         nodeID = step
         if (!isSearching) {
             console.log("enter the next layer")
@@ -204,7 +210,7 @@ async function respond(challengeId, isChallenger, config) {
             return RespondState.RESPOND
         }
 
-    } else {
+    } else if (curLayer == totalLayer - 1) { // the last one
         // curlayer = 1 // mipsvm
         if (!isSearching) {
             console.log("search is done")

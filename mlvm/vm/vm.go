@@ -34,6 +34,7 @@ func MPWriteCheckpoint(ram map[uint32](uint32), fn string, checkpoints []int, st
 	ioutil.WriteFile(fn, dat, 0644)
 }
 
+
 // memory layout in MIPS
 const (
 	INPUT_ADDR = 0x31000000
@@ -114,19 +115,23 @@ type Params struct {
 }
 
 type MPParams struct {
-	ProgramPath string
-	ModelPath string
-	InputPath string
-	Basedir string
-	ModelName string
+	ProgramPath string `json:"programPath"`
+	ModelPath string 	`json:"modelPath"`
+	InputPath string	`json:"inputPath"`
+	Basedir string		`json:"basedir"`
+	ModelName string	`json:"modelName"`
 
-	CurPhase int
-	TotalPhase int 
-	Checkpoints []int
-	StepCount []int
+	CurPhase int		`json:"curPhase"`
+	TotalPhase int		`json:"totalPhase"`
+	Checkpoints []int	`json:"checkpoints"`
+	StepCount []int		`json:"stepCounts"`
 
 	// optional
-	Prompt string
+	Prompt string		`json:"prompt"`
+	// for exec
+	ExecCommand string	`json:"execCommand"` 
+	ExecOutputDir string `json:"execOutputDir"`
+	ExecWorkDir string	`json:"execWorkDir"`
 }
 
 func ParseMPParams() (*MPParams, error) {
@@ -146,6 +151,10 @@ func ParseMPParams() (*MPParams, error) {
 	var stepcount_json string
 
 	var prompt string
+	// for exec
+	var execCommand string
+	var execOutputDir string
+	var execWorkDir string
 
 	defaultBasedir := os.Getenv("BASEDIR")
 	if len(defaultBasedir) == 0 {
@@ -163,6 +172,11 @@ func ParseMPParams() (*MPParams, error) {
 	flag.StringVar(&stepcount_json, "stepCount", "[]", "the total number of steps at the current phases")
 
 	flag.StringVar(&prompt, "prompt", "How to combine AI and blockchain?", "prompt for LLaMA")
+
+	// for exec
+	flag.StringVar(&execCommand, "execCommand", "", "the exec command for generating checkpoints")
+	flag.StringVar(&execOutputDir, "execOutputDir", "checkpoint", "save the output data for generating checkpoints, basedir/execOutputDir")
+	flag.StringVar(&execWorkDir, "execWorkDir", "", "working dir, will cd execWorkDir first and then exec the command")
 
 	flag.Parse()
 
@@ -203,6 +217,10 @@ func ParseMPParams() (*MPParams, error) {
 		StepCount: stepCount,
 
 		Prompt: prompt,
+
+		ExecCommand: execCommand,
+		ExecOutputDir: execOutputDir,
+		ExecWorkDir: execWorkDir,
 	}
 	return params, nil
 }
@@ -308,12 +326,6 @@ func RunWithMPParams(params *MPParams) {
 		// copy the file as the checkpoint output, should modify it later
 		err = CopyFile(fmt.Sprintf("%s/checkpoint/%s.json", params.Basedir, IntList2String(params.Checkpoints)), fmt.Sprintf("%s/checkpoint/%s.json",  params.Basedir, IntList2String(params.Checkpoints[:len(params.Checkpoints)-1])))
 		fmt.Println("copyFile error: ", err)
-		// command := fmt.Sprintf("cp %s/checkpoint/'%s'.json %s/checkpoint/'%s'.json", params.Basedir, IntList2String(params.Checkpoints), params.Basedir, IntList2String(params.Checkpoints[:len(params.Checkpoints)-1]))
-		// out, err := exec.Command("cp", fmt.Sprintf("%s/checkpoint/'%s'.json", params.Basedir, IntList2String(params.Checkpoints)), fmt.Sprintf("%s/checkpoint/'%s'.json",  params.Basedir, IntList2String(params.Checkpoints[:len(params.Checkpoints)-1]))).Output()
-		// fmt.Println("copy command: ", command, " out: ", out)
-		// if err != nil {
-		// 	fmt.Println("copy error: ", err)
-		// }
 		return 
 	} else {
 		// multi-phase opml
@@ -397,8 +409,10 @@ func MPGraphRun(params *MPParams) (string,  error) {
 
 	if params.ModelName == "MNIST" {
 		envBytes, nodeCount, err = MNIST(nodeID, params.ModelPath, params.InputPath)
-	} else { // if modelName == "LLAMA"
+	} else if params.ModelName == "LLAMA" { // if modelName == "LLAMA"
 		envBytes, nodeCount, err = LLAMA(nodeID, params.ModelPath, params.Prompt)
+	} else {
+		envBytes, nodeCount, err = MNIST(nodeID, params.ModelPath, params.InputPath)
 	}
 
 	// update
@@ -420,9 +434,7 @@ func MPGraphRun(params *MPParams) (string,  error) {
 	return fileName, nil
 }
 
-func MPRun(params *MPParams) {
 
-}
 
 func saveDataToFile(data []byte, filename string) error {
 	fout, err := os.Create(filename)

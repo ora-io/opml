@@ -98,3 +98,23 @@ func TestMPVMLast(t *testing.T) {
 	}
 	RunWithMPParams(params)
 }
+
+func TestMPVMScript(t *testing.T) {
+	initTest()
+	params := &MPParams{
+		ProgramPath: MIPS_PROGRAM,
+		Basedir: "/tmp/cannon",
+		ModelPath: "../../mlgo/examples/mnist/models/mnist/ggml-model-small-f32.bin",
+		InputPath: "../../mlgo/examples/mnist/models/mnist/input_7",
+		ModelName: "MNIST",
+
+		CurPhase: 0,
+		TotalPhase: 3,
+		Checkpoints: []int{2},
+		StepCount: make([]int, 3),
+
+		ExecCommand: "python ../scripts/server.py",
+		ExecOutputDir: "checkpoint",
+	}
+	RunWithMPParams(params)
+}

@@ -73,6 +73,10 @@ contract MPChallenge {
     uint256 totalLayer;
     // nodeID
     uint256 nodeID;
+    // checkpoints
+    mapping(uint256 => uint256) checkpoints;
+    // stepcounts
+    mapping(uint256 => uint256) stepcounts;
   }
 
   /// @notice ID if the last created challenged, incremented for new challenge IDs.
@@ -146,6 +150,8 @@ contract MPChallenge {
     c.R[0] = stepCount;
     c.nodeID = 0;
 
+    c.stepcounts[c.currentLayer] = stepCount;
+
     emit ChallengeCreated(challengeId);
     return challengeId;
   }
@@ -156,7 +162,9 @@ contract MPChallenge {
     require(c.L[c.currentLayer] + 1 == c.R[c.currentLayer], "the current layer should end");
     require(c.currentLayer < c.totalLayer - 1, "the current layer is the last layer");
     c.nodeID = c.L[c.currentLayer];
+    c.checkpoints[c.currentLayer] = c.L[c.currentLayer];
     c.currentLayer += 1;
+    c.stepcounts[c.currentLayer] = stepCount;
     c.assertedState[c.currentLayer][0] = startState;
     c.defendedState[c.currentLayer][0] = startState;
     c.assertedState[c.currentLayer][stepCount] = finalState;
@@ -217,6 +225,30 @@ contract MPChallenge {
     ChallengeData storage c = challenges[challengeId];
     require(c.challenger != address(0), "invalid challenge");
     return c.currentLayer;    
+  }
+
+  function getTotalLayer(uint256 challengeId) view public returns (uint256) {
+    ChallengeData storage c = challenges[challengeId];
+    require(c.challenger != address(0), "invalid challenge");
+    return c.totalLayer;    
+  }
+
+  function getCheckpoint(uint256 challengeId, uint256 layer) view public returns (uint256) {
+    ChallengeData storage c = challenges[challengeId];
+    require(c.challenger != address(0), "invalid challenge");
+    require(layer <= c.currentLayer, "the layer is larger then the current layer, invalid");
+    if (layer < c.currentLayer) {
+      return c.checkpoints[layer];
+    } else {
+      // layer == c.currentLayer
+      return getStepNumber(challengeId);
+    }
+  }
+
+  function getStepcount(uint256 challengeId, uint256 layer) view public returns (uint256) {
+    ChallengeData storage c = challenges[challengeId];
+    require(c.challenger != address(0), "invalid challenge");
+    return c.stepcounts[layer];    
   }
 
   /// @notice Returns the last state hash proposed by the challenger during the binary search.

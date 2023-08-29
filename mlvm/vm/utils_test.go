@@ -3,6 +3,7 @@ package vm
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"testing"
 )
 
@@ -23,8 +24,6 @@ func TestJSON(t *testing.T) {
 
 
 func TestXxx(t *testing.T) {
-	err := CopyFile("/tmp/cannon_fault/checkpoint/[3,0].json", "/tmp/cannon_fault/checkpoint/[3].json")
-	if err != nil {
-		fmt.Println(err)
-	}
+	wd, err := os.Getwd()
+	fmt.Println("wd: ", wd, " err: ", err)
 }
