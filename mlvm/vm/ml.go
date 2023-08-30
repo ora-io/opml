@@ -52,6 +52,9 @@ func MNIST(nodeID int, modelFile string, dataFile string) ([]byte, int, error) {
 		return nil, 0, err
 	}
 	graph, ctx := mnist.ExpandGraph(model, threadCount, input)
+	if nodeID < 0 {
+		nodeID = int(graph.NodesCount) - 1
+	}
 	ml.GraphComputeByNodes(ctx, graph, nodeID)
 	envBytes := ml.SaveComputeNodeEnvToBytes(uint32(nodeID), graph.Nodes[nodeID], graph, true)
 	return envBytes, int(graph.NodesCount), nil

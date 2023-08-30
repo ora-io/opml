@@ -108,10 +108,10 @@ func TestMPVMScript(t *testing.T) {
 		InputPath: "../../mlgo/examples/mnist/models/mnist/input_7",
 		ModelName: "MNIST",
 
-		CurPhase: 0,
+		CurPhase: 1,
 		TotalPhase: 3,
-		Checkpoints: []int{2},
-		StepCount: make([]int, 3),
+		Checkpoints: []int{9,-1},
+		StepCount: make([]int, 10),
 
 		ExecCommand: "python ../scripts/server.py",
 		ExecOutputDir: "checkpoint",

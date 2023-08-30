@@ -7,6 +7,8 @@ async function main() {
     const submitterDir = "/tmp/cannon"
     const challengerDir = "/tmp/cannon_fault"
 
+    api.config.totalPhase = 3 // test
+
     var submitterConfig = api.getConfig()
     submitterConfig.basedir = submitterDir
 
@@ -50,8 +52,8 @@ async function main() {
 
 
     // === interactive dispute game ===
-    for (i = 0; i < 25; i++) {
-        console.log("--- STEP ", i, " / 25 ---")
+    for (i = 0; i < 30; i++) {
+        console.log("--- STEP ", i, " / 30 ---")
         state = await api.respond(challengeId, true, challengerConfig)
         state = await api.respond(challengeId, false, submitterConfig)
         if (state == "END") {

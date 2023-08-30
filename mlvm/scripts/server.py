@@ -61,6 +61,9 @@ def main():
     args = parseArg()
     # root = hash(0x1cc).to_bytes(32, "big").hex()
     # root = "0x" + hashlib.sha256(b"0x1cc").hexdigest()
+    args.mp_checkpoints = json.loads(args.mp_checkpoints)
+    args.mp_stepCount = json.loads(args.mp_stepCount)
+    
     root = getRoot(args.mp_checkpoints)
     # mock for stepCount
     for i in range(len(args.mp_stepCount)):

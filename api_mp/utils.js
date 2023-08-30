@@ -44,7 +44,7 @@ async function getTrieNodesForCall(c, caddress, cdat, preimages) {
 
 function getTrieAtStep(config) {
 
-    var command = "mlvm/mlvm --mp" + " --basedir="+config.basedir + " --program="+config.programPath + " --model="+config.modelPath + " --data="+config.dataPath + " --modelName="+config.modelName + " --curPhase="+config.curPhase + " --totalPhase="+config.totalPhase + " --checkpoints="+JSON.stringify(config.checkpoints) + " --stepCount="+JSON.stringify(config.stepCount)
+    var command = "mlvm/mlvm --mp" + " --basedir="+config.basedir + " --program="+config.programPath + " --model="+config.modelPath + " --data="+config.dataPath + " --modelName="+config.modelName + " --curPhase="+config.curPhase + " --totalPhase="+config.totalPhase + " --checkpoints="+JSON.stringify(config.checkpoints) + " --stepCount="+JSON.stringify(config.stepCount) + " --execCommand="+JSON.stringify(config.execCommand)
 
     let fn  = config.basedir + "/checkpoint/" + JSON.stringify(config.checkpoints) + ".json"
   

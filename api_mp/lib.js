@@ -13,7 +13,9 @@ var config = {
     curPhase: 0,
     totalPhase: 2,
     checkpoints: [],
-    stepCount: []
+    stepCount: [],
+
+    execCommand: "python mlvm/scripts/server.py"
 }
 
 const MNIST_MIPS_MODEL = "./mlgo/examples/mnist/models/mnist/ggml-model-small-f32-big-endian.bin"
@@ -30,7 +32,9 @@ function getConfig() {
         curPhase: config.curPhase,
         totalPhase: config.totalPhase,
         checkpoints: [...config.checkpoints],
-        stepCount: [...config.stepCount]
+        stepCount: [...config.stepCount],
+
+        execCommand: config.execCommand
     }
     return newConfig
 }
@@ -40,12 +44,17 @@ function copyConfig(config) {
 }
 
 function genGoldenImage(config) {
-    var command = "mlvm/mlvm --mp" + " --basedir="+config.basedir + " --program="+config.programPath + " --model="+config.modelPath + " --data="+config.dataPath + " --modelName="+config.modelName + " --curPhase="+config.curPhase + " --totalPhase="+config.totalPhase + " --checkpoints="+JSON.stringify(config.checkpoints) + " --stepCount="+JSON.stringify(config.stepCount)
+    var command = "mlvm/mlvm --mp" + " --basedir="+config.basedir + " --program="+config.programPath + " --model="+config.modelPath + " --data="+config.dataPath + " --modelName="+config.modelName + " --curPhase="+config.curPhase + " --totalPhase="+config.totalPhase + " --checkpoints="+JSON.stringify(config.checkpoints) + " --stepCount="+JSON.stringify(config.stepCount) + " --execCommand="+JSON.stringify(config.execCommand)
     console.log(command)
     child_process.execSync(command, {stdio: 'inherit'})
     console.log("golden.json is at " + config.basedir+"/checkpoint/[0].json")
-    cpCommand = "cp " + config.basedir + "/checkpoint/[0,0].json " + config.basedir+"/checkpoint/[0].json"
-    child_process.execSync(cpCommand, {stdio: 'inherit'})
+    try {
+        cpCommand = "cp " + config.basedir + "/checkpoint/[0,0].json " + config.basedir+"/checkpoint/[0].json"
+        child_process.execSync(cpCommand, {stdio: 'inherit'})
+    } catch (error) {
+        console.log(error)
+    }
+    
 }
 
 
@@ -240,6 +249,49 @@ async function respond(challengeId, isChallenger, config) {
         let receipt = await ret.wait()
         console.log("done", receipt.blockNumber)
         return RespondState.RESPOND
+    } else {
+        // [0...totalLayer - 2]
+        if (!isSearching) {
+            console.log("enter the next layer")
+            let newConfig = copyConfig(config)
+            newConfig.checkpoints.push(0)
+            newConfig.curPhase += 1
+            let startTrie = utils.getTrieAtStep(newConfig)
+
+            newConfig = copyConfig(config)
+            newConfig.checkpoints.push(-1)
+            newConfig.curPhase += 1
+            let finalTrie = utils.getTrieAtStep(newConfig)
+
+            console.log(challengeId, startTrie['root'], finalTrie['root'], finalTrie['stepCount'])
+            ret = await c.toNextLayer(challengeId, startTrie['root'], finalTrie['root'], finalTrie['stepCount'][newConfig.curPhase])
+            let receipt = await ret.wait()
+            console.log("to next layer done", receipt.blockNumber)
+            return RespondState.NEXT
+        } else {
+            const proposed = await c.getProposedState(challengeId)
+            const isProposing = proposed == "0x0000000000000000000000000000000000000000000000000000000000000000"
+            if (isProposing != isChallenger) {
+                console.log("bad challenger state")
+                return RespondState.WAIT
+            }
+            console.log("isProposing", isProposing)
+
+            newConfig = copyConfig(config)
+            let thisTrie = utils.getTrieAtStep(newConfig)
+            const root = thisTrie['root']
+            console.log("new root", root)
+
+            let ret
+            if (isProposing) {
+                ret = await c.proposeState(challengeId, root)
+            } else {
+                ret = await c.respondState(challengeId, root)
+            }
+            let receipt = await ret.wait()
+            console.log("done", receipt.blockNumber)
+            return RespondState.RESPOND
+        }
     }
 }
 
@@ -254,8 +306,13 @@ async function assert(challengeId, isChallenger, config) {
     let curLayer = (await c.getCurrentLayer(challengeId)).toNumber()
     console.log("curLayer: ", curLayer)
 
-    config.checkpoints[curLayer] = step
-    config.checkpoints[0] = nodeID
+    // config.checkpoints[curLayer] = step
+    // config.checkpoints[0] = nodeID
+
+    for (var i = 0; i <= curLayer; i++) {
+        config.checkpoints[i] = (await c.getCheckpoint(challengeId, i)).toNumber()
+        config.stepCount[i] = (await c.getStepcount(challengeId, i)).toNumber()
+    }
   
     if (await c.isSearching(challengeId)) {
       console.log("search is NOT done")
