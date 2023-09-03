@@ -14,6 +14,9 @@ var config = {
     totalPhase: 2,
     checkpoints: [],
     stepCount: [],
+    challengeId: 0,
+
+    prompt: "",
 
     execCommand: "python mlvm/scripts/server.py"
 }
@@ -33,6 +36,9 @@ function getConfig() {
         totalPhase: config.totalPhase,
         checkpoints: [...config.checkpoints],
         stepCount: [...config.stepCount],
+        challengeId: config.challengeId,
+
+        prompt: config.prompt,
 
         execCommand: config.execCommand
     }
@@ -52,7 +58,7 @@ function genGoldenImage(config) {
         cpCommand = "cp " + config.basedir + "/checkpoint/[0,0].json " + config.basedir+"/checkpoint/[0].json"
         child_process.execSync(cpCommand, {stdio: 'inherit'})
     } catch (error) {
-        console.log(error)
+        // console.log(error)
     }
     
 }
@@ -170,6 +176,12 @@ async function respond(challengeId, isChallenger, config) {
     // if (curLayer == 1) {
     //     config.checkpoints[0] = nodeID    
     // }
+
+    var respondResult = {
+        config: config,
+        state: RespondState.RESPOND,
+        root: null,
+    }
     
 
     if (curLayer == totalLayer - 2) { // the last 2nd
@@ -193,7 +205,11 @@ async function respond(challengeId, isChallenger, config) {
             ret = await c.toNextLayer(challengeId, startTrie['root'], finalTrie['root'], finalTrie['stepCount'][newConfig.curPhase])
             let receipt = await ret.wait()
             console.log("to next layer done", receipt.blockNumber)
-            return RespondState.NEXT
+
+            respondResult.root = startTrie['root']
+            respondResult.state = RespondState.NEXT
+            return respondResult
+            // return RespondState.NEXT
         } else {
             const proposed = await c.getProposedState(challengeId)
             const isProposing = proposed == "0x0000000000000000000000000000000000000000000000000000000000000000"
@@ -216,7 +232,11 @@ async function respond(challengeId, isChallenger, config) {
             }
             let receipt = await ret.wait()
             console.log("done", receipt.blockNumber)
-            return RespondState.RESPOND
+
+            respondResult.root = root
+            respondResult.state = RespondState.RESPOND
+            return respondResult
+            // return RespondState.RESPOND
         }
 
     } else if (curLayer == totalLayer - 1) { // the last one
@@ -248,7 +268,11 @@ async function respond(challengeId, isChallenger, config) {
         }
         let receipt = await ret.wait()
         console.log("done", receipt.blockNumber)
-        return RespondState.RESPOND
+
+        respondResult.root = root
+        respondResult.state = RespondState.RESPOND
+        return respondResult
+        // return RespondState.RESPOND
     } else {
         // [0...totalLayer - 2]
         if (!isSearching) {
@@ -267,7 +291,11 @@ async function respond(challengeId, isChallenger, config) {
             ret = await c.toNextLayer(challengeId, startTrie['root'], finalTrie['root'], finalTrie['stepCount'][newConfig.curPhase])
             let receipt = await ret.wait()
             console.log("to next layer done", receipt.blockNumber)
-            return RespondState.NEXT
+
+            respondResult.root = startTrie['root']
+            respondResult.state = RespondState.NEXT
+            return respondResult
+            // return RespondState.NEXT
         } else {
             const proposed = await c.getProposedState(challengeId)
             const isProposing = proposed == "0x0000000000000000000000000000000000000000000000000000000000000000"
@@ -290,7 +318,11 @@ async function respond(challengeId, isChallenger, config) {
             }
             let receipt = await ret.wait()
             console.log("done", receipt.blockNumber)
-            return RespondState.RESPOND
+
+            respondResult.root = root
+            respondResult.state = RespondState.RESPOND
+            return respondResult
+            // return RespondState.RESPOND
         }
     }
 }
@@ -314,9 +346,15 @@ async function assert(challengeId, isChallenger, config) {
         config.stepCount[i] = (await c.getStepcount(challengeId, i)).toNumber()
     }
   
+    var assertResult = {
+        state: "OK",
+        events: []
+    }
+
     if (await c.isSearching(challengeId)) {
       console.log("search is NOT done")
-      return
+      assertResult.state = "NOT DONE"
+      return assertResult
     }
 
     let cdat
@@ -357,6 +395,9 @@ async function assert(challengeId, isChallenger, config) {
   
     let receipt = await ret.wait()
     console.log(receipt.events.map((x) => x.event))
+    assertResult.state = "OK"
+    assertResult.events = receipt.events.map((x) => x.event)
+    return assertResult
 }
 
 module.exports = {

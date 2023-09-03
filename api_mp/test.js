@@ -54,9 +54,9 @@ async function main() {
     // === interactive dispute game ===
     for (i = 0; i < 30; i++) {
         console.log("--- STEP ", i, " / 30 ---")
-        state = await api.respond(challengeId, true, challengerConfig)
-        state = await api.respond(challengeId, false, submitterConfig)
-        if (state == "END") {
+        result = await api.respond(challengeId, true, challengerConfig)
+        result = await api.respond(challengeId, false, submitterConfig)
+        if (result.state == "END") {
             console.log("bisection ends")
             break
         } 
