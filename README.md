@@ -13,6 +13,8 @@ mlvm -- A MIPS runtime with ML execution
 contracts -- A Merkleized MIPS processor on chain + the challenge logic
 ```
 
+For more in-depth information, please refer to the [project wiki](https://github.com/hyperoracle/opml/wiki). Additionally, you can find a tutorial on building a straightforward handwritten digit recognition DNN model (MNIST) within OPML in the [`docs/tutorial.md`](docs/tutorial.md).
+
 ## Building
 
 Pre-requisites: Go, Node.js, Make, and CMake.
@@ -33,6 +35,8 @@ Then we can run
 ```shell
 sh ./demo/challenge_simple.sh
 ```
+
+A large language model, the 7B-llama example is provided in the branch ["llama"](https://github.com/hyperoracle/opml/tree/llama).
 
 ## License
 
