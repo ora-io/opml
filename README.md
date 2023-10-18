@@ -44,8 +44,8 @@ A large language model, the 7B-llama example is provided in the branch ["llama"]
 | Feature |  Status |
 | ------- |  :------: |
 | **Supported Model** |    |
-| DNN for MNISH | ✅ |
-| 7B-LLaMA | ✅ |
+| DNN for MNIST | ✅ |
+| LLaMA | ✅ |
 | **Mode** |    |
 | Inference| ✅ |
 | Training | 🔨 |
