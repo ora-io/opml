@@ -30,7 +30,7 @@ Then we can run:
 sh ./demo/challenge_simple.sh
 ```
 
-A large language model, the 7B-llama example is provided in the branch ["llama"](https://github.com/hyperoracle/opml/tree/llama).
+A large language model, the llama example is provided in the branch ["llama"](https://github.com/hyperoracle/opml/tree/llama) (It also works for llama 2).
 
 ## Roadmap
 
@@ -46,12 +46,18 @@ A large language model, the 7B-llama example is provided in the branch ["llama"]
 | **Supported Model** |    |
 | DNN for MNIST | ✅ |
 | LLaMA | ✅ |
+| General DNN Model (Onnx Support) | 🛠 |
+| Traditional ML Algorithm (Decision tree, KNN etc) | 🔨 |
 | **Mode** |    |
 | Inference| ✅ |
 | Training | 🔨 |
 | Fine-tuning | 🔨 |
 | **Optimization** |    |
 | zk fault proof with zkOracle| 🛠 |
+| GPU Acceleration | 🛠 |
+| High Performance VM | 🛠 |
+| **Functionality** |    |
+| User-Friendly SDK| 🛠 |
 
 ## Project Structure
 
