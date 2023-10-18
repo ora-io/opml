@@ -50,6 +50,8 @@ A large language model, the 7B-llama example is provided in the branch ["llama"]
 | Inference| ✅ |
 | Training | 🔨 |
 | Fine-tuning | 🔨 |
+| **Optimization** |    |
+| zk fault proof with zkOracle| 🛠 |
 
 ## Project Structure
 
