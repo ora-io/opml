@@ -47,13 +47,13 @@ A large language model, the llama example is provided in the branch ["llama"](ht
 | DNN for MNIST | ✅ |
 | LLaMA | ✅ |
 | General DNN Model (Onnx Support) | 🛠 |
-| Traditional ML Algorithm (Decision tree, KNN etc) | 🔨 |
+| Traditional ML Algorithm (Decision Tree, KNN etc) | 🔨 |
 | **Mode** |    |
 | Inference| ✅ |
 | Training | 🔨 |
 | Fine-tuning | 🔨 |
 | **Optimization** |    |
-| zk fault proof with zkOracle| 🛠 |
+| ZK Fault Proof with zkOracle and zkWASM | 🛠 |
 | GPU Acceleration | 🛠 |
 | High Performance VM | 🛠 |
 | **Functionality** |    |
