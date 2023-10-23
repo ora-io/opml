@@ -8,7 +8,7 @@ You can also find a tutorial on building a straightforward handwritten digit rec
 
 ## Building
 
-Pre-requisites: Go, Node.js, Make, and CMake.
+Pre-requisites: Go (Go 1.19), Node.js, Make, and CMake.
 
 ```
 git clone git@github.com:hyperoracle/opml.git --recursive
@@ -28,7 +28,7 @@ npx hardhat node
 Then we can run:
 
 ```shell
-sh ./demo/challenge_simple.sh
+bash ./demo/challenge_simple.sh
 ```
 
 A large language model, the llama example is provided in the branch ["llama"](https://github.com/hyperoracle/opml/tree/llama) (It also works for llama 2).
