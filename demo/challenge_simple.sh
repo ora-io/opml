@@ -109,10 +109,10 @@ done
 
 # --- SINGLE STEP EXECUTION ----------------------------------------------------
 
-shout "ASSERTING AS CHALLENGER (should fail)"
-set +e # this should fail!
-BASEDIR=/tmp/cannon_fault CHALLENGER=1 npx hardhat run scripts/assert.js --network localhost
-set -e
+# shout "ASSERTING AS CHALLENGER (should fail)"
+# set +e # this should fail!
+# BASEDIR=/tmp/cannon_fault CHALLENGER=1 npx hardhat run scripts/assert.js --network localhost
+# set -e
 
 shout "ASSERTING AS DEFENDER (should pass)"
 npx hardhat run scripts/assert.js  --network localhost

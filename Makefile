@@ -80,10 +80,6 @@ test_contracts:
 
 
 clean:
-	rm -f minigeth/go-ethereum
-	rm -f mipigo/minigeth
-	rm -f mipigo/minigeth.bin
-	rm -f mipsevm/mipsevm
 	rm -rf artifacts
 	rm -f unicorn/libunicorn.*
 .PHONY: clean
@@ -91,6 +87,5 @@ clean:
 mrproper: clean
 	rm -rf cache
 	rm -rf node_modules
-	rm -rf mipigo/venv
 	rm -rf unicorn/build
 .PHONY:  mrproper

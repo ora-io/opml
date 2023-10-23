@@ -19,4 +19,4 @@ jobs:
     - name: Build
       run: make build
     - name: Run simple challenge scenario
-      run: demo/challenge_simple.sh
+      run: bash demo/challenge_simple.sh
