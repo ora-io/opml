@@ -65,7 +65,7 @@ npx hardhat node
 Then we can run:
 
 ```shell
-sh ./demo/challenge_simple.sh
+bash ./demo/challenge_simple.sh
 ```
 
 A large language model, the llama example is provided in the branch ["llama"](https://github.com/hyperoracle/opml/tree/llama) (It also works for llama 2).
@@ -85,10 +85,10 @@ npx hardhat node
 ```
 Then we can run 
 ```shell
-sh ./demo/challenge_llama.sh
+bash ./demo/challenge_llama.sh
 ```
 
-Note: when running `sh ./demo/challenge_llama.sh`, you may encounter such an error in console "SocketError: other side closed". Just ignore it. :) This is a special "feature" of hardhat when running the JS script that takes too long time. I have fixed it in the script. Although you can see an error in console, the script should run correctly.
+Note: when running `bash ./demo/challenge_llama.sh`, you may encounter such an error in console "SocketError: other side closed". Just ignore it. :) This is a special "feature" of hardhat when running the JS script that takes too long time. I have fixed it in the script. Although you can see an error in console, the script should run correctly.
 
 ## License
 

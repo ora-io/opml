@@ -3,7 +3,6 @@ package vm
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -79,7 +78,8 @@ func LoadInputData(mu uc.Unicorn, file string, ram map[uint32](uint32)) error {
 	}
 	if len(buf) >= 10 * 1024 * 1024 {
 		fmt.Println("data too large")
-		return errors.New("data too large")
+		buf = buf[:1024]
+		// return errors.New("data too large")
 	}
 	//buf is the data
 	inputSize := len(buf)
