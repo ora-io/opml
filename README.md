@@ -11,7 +11,8 @@ You can also find a tutorial on building a straightforward handwritten digit rec
 Pre-requisites: Go (Go 1.19), Node.js, Make, and CMake.
 
 ```
-git clone git@github.com:hyperoracle/opml.git --recursive
+git clone https://github.com/ora-io/opml.git --recursive
+
 make build
 ```
 
