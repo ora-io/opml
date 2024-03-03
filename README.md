@@ -13,6 +13,8 @@ Pre-requisites: Go (Go 1.19), Node.js, Make, and CMake.
 ```
 git clone https://github.com/ora-io/opml.git --recursive
 
+cd opml
+
 make build
 ```
 
