@@ -2,9 +2,9 @@
 # 1. Generate ssh command: ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 #    - Save the key in local repo where Dockerfile is placed as id_rsa
 #    - Add the public key to the GitHub account
-# 2. Build docker image: docker build -t ubuntu-ora-dev .
-# 3. Run the hardhat: docker run -it --rm --name ubuntu-ora-dev-container ubuntu-ora-dev bash -c "npx hardhat node"
-# 4. Run the challange script on the same container: docker exec -it ubuntu-ora-dev-container bash -c "./demo/challenge_simple.sh"
+# 2. Build docker image: docker build -t ubuntu-opml-dev .
+# 3. Run the hardhat: docker run -it --rm --name ubuntu-opml-dev-container ubuntu-opml-dev bash -c "npx hardhat node"
+# 4. Run the challange script on the same container: docker exec -it ubuntu-opml-dev-container bash -c "./demo/challenge_simple.sh"
 
 
 # Use an official Ubuntu as a parent image
