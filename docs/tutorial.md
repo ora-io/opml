@@ -4,7 +4,7 @@ In this tutorial, you will learn how to run a simple handwritten digit recogniti
 
 ## Train
 
-First train a DNN model using Pytorch, the training part is shown in `mlgo/examples/mnist/trainning/mnist.ipynb`
+First train a DNN model using Pytorch, the training part is shown in `mlgo/examples/mnist/training/mnist.ipynb`
 and then save the model at `mlgo/examples/mnist/models/mnist/mnist-small.state_dict`
 
 ## Model Format Conversion
@@ -30,7 +30,7 @@ To build a ML program in MIPS VM, just run `mlgo/examples/mnist_mips/build.sh`
 
 ## Construct VM Image
 
-The user who proposes a ML inference request should first construct a initial VM image
+The user who proposes a ML inference request should first construct an initial VM image
 
 ```shell
 mlvm/mlvm --outputGolden --basedir=/tmp/cannon --program="$PROGRAM_PATH" --model="$MODEL_PATH" --data="$DATA_PATH" --mipsVMCompatible
